@@ -13,7 +13,7 @@ struct entry *nameTable = 0;
 int nameTableAdd (const char *name, uint16_t value) {
 	if (0 == nameTableSearch (name, 0))
 		return 2; // метка уже присутствует в таблице символов
-	struct entry *newEntry = (struct entry *)calloc (sizeof (struct entry));
+	struct entry *newEntry = (struct entry *)calloc (sizeof (struct entry), 1);
 	if (newEntry == 0) 
 		return 1; //не удалось выделить память
 	newEntry->name = strdup (name);
@@ -37,6 +37,6 @@ int nameTableSearch (const char *name, uint16_t *valueDst) {
 		}
 		iterator = iterator->next;
 	}
-	return 1 //метка не найдена
+	return 1; //метка не найдена
 }
 
