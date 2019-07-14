@@ -1,6 +1,7 @@
 #include "nameTable.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 struct entry {
 	struct entry *next;
@@ -38,5 +39,25 @@ int nameTableSearch (const char *name, uint16_t *valueDst) {
 		iterator = iterator->next;
 	}
 	return 1; //метка не найдена
+}
+
+uint16_t getAdress (const char *name) {
+	uint16_t ans;
+	struct entry *iterator = nameTable;
+	while (iterator != 0) {
+		if (0 == strcmp (iterator->name, name)) {
+			return (iterator -> value) * 2; //метка найдена 
+		}
+		iterator = iterator->next;
+	}
+	return 1; //метка не найдена
+}
+int printTable () {
+	struct entry *iterator = nameTable;
+	while (iterator != 0) {
+		printf("name:%s\norg:%d\n\n", iterator->name, iterator->value);
+		iterator = iterator->next;
+	}
+	return 0;
 }
 
