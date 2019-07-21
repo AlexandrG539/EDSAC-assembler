@@ -46,7 +46,7 @@ uint16_t getAdress (const char *name) {
 	struct entry *iterator = nameTable;
 	while (iterator != 0) {
 		if (0 == strcmp (iterator->name, name)) {
-			return (iterator -> value) * 2; //метка найдена 
+			return (iterator -> value) * 2; 
 		}
 		iterator = iterator->next;
 	}

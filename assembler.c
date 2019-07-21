@@ -27,6 +27,8 @@ uint16_t orgMax = 31;
 int process (int pass, FILE *input);
 int processLine (uint16_t *org, char *line, int linenum, int pass);
 int printAns(FILE *output);
+int readNum (char *array);
+int deleteLast(char *line);
 
 int main (int argc, char **argv) {
 	create (993); // битовый массив отображает, происходила ли запись в ячейку
@@ -34,11 +36,11 @@ int main (int argc, char **argv) {
 	char *nameOutput;
 	if (argc <= 1) {
          printf("syntax : \n\t-i name of imput file\n\t-o name of output file\n", argv[0]);
-         return 1; //код ошибки 1 - ошибка, связанная с командной строкой
+         return 6; //код ошибки 6 - ошибка, связанная с командной строкой
      }
 	if (argc != 5) {
 		printf("Parameters entered incorrectly");
-		return 1;
+		return 6;
 	}
 	if ((!strcmp(argv[1], "-i") && !strcmp (argv[3], "-o")) 
 		|| (!strcmp(argv[3], "-i") && !strcmp (argv[1], "-o"))) {
@@ -53,44 +55,41 @@ int main (int argc, char **argv) {
 	} 
 	else {
 		printf ("Wrong pare of flags:'%s', '%s', required '-i' and '-o'\n", argv[1], argv[3]);
-		return 1;
+		return 6;
 	}
 	FILE *input = fopen(nameInput, "rt");
 	FILE *output = fopen (nameOutput, "wb");
 	if(regcomp(&label, "^[[:space:]]*([[:alpha:]][[:alnum:]]*):", REG_EXTENDED)) {
 		printf ("Could not compile regex label\n");
-		return 3;
+		return 7;
 	}
-	if(regcomp(&command, "[[:space:]]*([ASHVNTUCRLEGIOFXYZ])[[:space:]]*([[:alpha:]][[:alnum:]]*)", REG_EXTENDED)) {
+	if(regcomp(&command, "[[:space:]]*([ASHVNTUCRLEGIOFXYZ])[[:space:]]+([[:alpha:]][[:alnum:]]*)", REG_EXTENDED)) {
 		printf ("Could not compile regex command\n");
-		return 3;
+		return 7;
 	}
-	if (regcomp(&format,"^[[:space:]]*([[:alpha:]][[:alnum:]]*:)?[[:space:]]*([ASHVNTUCRLEGIOFXYZ][[:space:]]*[[:alpha:]][[:alnum:]]*)?[[:space:]]*(\\/\\\
-	/[[:print:]]*)?([[:blank:]])?$", REG_EXTENDED)) {
+	if (regcomp(&format,"^[[:space:]]*([[:alpha:]][[:alnum:]]*:)?[[:space:]]*([ASHVNTUCRLEGIOFXYZ][[:space:]]+[[:alpha:]][[:alnum:]]*)?[[:space:]]*(\\/\\/[[:print:]]*)?$", REG_EXTENDED)) {
 		printf ("Could not compile regex format\n");
-		return 3;
+		return 7;
 	}
-	if (regcomp(&formatDirective,"^[[:space:]]*([[:alpha:]][[:alnum:]]*:)?[[:space:]]*((.org)|(.array)|(.const)[[:space:]]+([[:digit:]]+)|(0x[[:xdigit:]]+))?[[:space:]]*(\\/\\/[[:print:]]*)?([[:blank:]])?$", REG_EXTENDED)) {
-		printf ("Could not compile regex formatDirective\n");
-		return 3;
-	}
-	if (regcomp(&directiveArray,"^[[:space:]]*(.array)[[:space:]]*([[:digit:]]+)[[:space:]]*(//[[:print:]]*)?", REG_EXTENDED)) {
+	if (regcomp(&directiveArray,"^[[:space:]]*([[:alpha:]][[:alnum:]]*:)?[[:space:]]*.array[[:space:]]+(([[:digit:]]+)|(0x[[:xdigit:]]+))[[:space:]]*(\\/\\/[[:print:]]*)?$", REG_EXTENDED)) {
 		printf ("Could not compile regex directiveArray\n");
-		return 3;
+		return 7;
 	}
-	if (regcomp(&directiveConst,"^[[:space:]]*(.const)[[:space:]]*([[:digit:]]+)[[:space:]]*(//[[:print:]]*)?", REG_EXTENDED)) {
+	if (regcomp(&directiveConst,"^[[:space:]]*([[:alpha:]][[:alnum:]]*:)?[[:space:]]*.const[[:space:]]+(([[:digit:]]+)|(0x[[:xdigit:]]+))[[:space:]]*(\\/\\/[[:print:]]*)?$", REG_EXTENDED)) {
 		printf ("Could not compile regex directiveConst\n");
-		return 3;
+		return 7;
 	}
-	if (regcomp(&directiveOrg,"^[[:space:]]*(.org)[[:space:]]*([[:digit:]]+)[[:space:]]*(//[[:print:]]*)?", REG_EXTENDED)) {
+	if (regcomp(&directiveOrg,"^[[:space:]]*([[:alpha:]][[:alnum:]]*:)?[[:space:]]*.org[[:space:]]+(([[:digit:]]+)|(0x[[:xdigit:]]+))[[:space:]]*(\\/\\/[[:print:]]*)?$", REG_EXTENDED)) {
 		printf ("Could not compile regex directiveOrg\n");
-		return 3;
+		return 7;
 	}
 	int result = process(1, input);
 	if (result != 0)
 		return result;
 	rewind(input);
 	process (2, input);
+	if (result != 0)
+		return result;
 	printAns(output);
 	return 0;
 }
@@ -104,8 +103,29 @@ int process (int pass, FILE *input) {
             printf ("Reading error");
 			return 2; // ошибка чтения
         }
+		deleteLast (lineBuffer);
 		int result = processLine(&org, lineBuffer, linenum, pass);
 		if (result != 0) {
+			if (result == 1) {
+				printf ("String %d has wrong format\nDEBUG %d\n", linenum, result);
+				return result;
+			}
+			if (result == 2) {
+				printf ("Error in string %d: There are two identical labels.\nDEBUG %d\n", linenum, result);
+				return result;
+			}
+			if (result == 3) {
+				printf ("Error in string %d: memory cell full\nDEBUG %d\n", linenum, result);
+				return result;
+			}
+			if (result == 4) {
+				printf ("Error in string %d: out of memory\nDEBUG %d\n", linenum, result);
+				return result;
+			}
+			if (result == 5) {
+				printf ("Error in string %d: label not declared\nDEBUG %d\n", linenum, result);
+				return result;
+			}
             printf ("String %d has wrong format\nDEBUG %d\n", linenum, result);
             return result;
         }
@@ -115,24 +135,26 @@ int process (int pass, FILE *input) {
 }
 
 int processLine (uint16_t *org, char *line, int linenum, int pass) {
-	uint32_t value = 0;
+	if(*org < 31 || *org > 1024) 
+		return 4;
+	if ((regexec(&format, line, 0, NULL, 0) != 0) && (regexec(&directiveArray, line, 0, NULL, 0) != 0) && (regexec(&directiveConst, line, 0, NULL, 0) != 0) &&(regexec(&directiveOrg, line, 0, NULL, 0) != 0)) {
+			return 1;
+		}
 	if (pass == 1) {
-		//if ((regexec(&format, line, 0, NULL, 0) != 0) && (regexec(&formatDirective, line, 0, NULL, 0) != 0)) {
-		//	printf ("wrong format of string %d\n", linenum);
-		//	return 1;
-		//}
 		if (0 == regexec(&label, line, 6, sub, 0)) {
-		char labelTxt[1024];
-		size_t len = sub[1].rm_eo - sub[1].rm_so;
-		memcpy (labelTxt, &(line [sub[1].rm_so]), len);
-		labelTxt[len] = 0;
-		if (nameTableAdd (labelTxt,*org) != 0)
+			char labelTxt[1024];
+			size_t len = sub[1].rm_eo - sub[1].rm_so;
+			memcpy (labelTxt, &(line [sub[1].rm_so]), len);
+			labelTxt[len] = 0;
+			if (nameTableAdd (labelTxt,*org) != 0)
 			return 2; // две метки с одинаковым именем
 		}
 	}
 	if (0 == regexec(&command, line, 6, sub, 0)) {
 		if (pass == 1) {
 			*org = *org + 1;
+			if(*org < 31 || *org > 1024)
+				return 4;
 		}
 		if (pass == 2) {
 			char cmd[2];
@@ -142,6 +164,8 @@ int processLine (uint16_t *org, char *line, int linenum, int pass) {
 			size_t l = sub[2].rm_eo - sub[2].rm_so;
 			memcpy (labelName, &(line [sub[2].rm_so]), l);
 			labelName[l] = 0;
+			if (getAdress(labelName) == 1)
+				return 5;
 			if (get(*org - 31))
 				return 3;
 			if (cmd[0] == 'A') {
@@ -196,7 +220,7 @@ int processLine (uint16_t *org, char *line, int linenum, int pass) {
 				memory[*org - 31] = 24576 + getAdress(labelName);
 			}
 			else if (cmd[0] == 'Z') {
-				memory[*org - 31] = 53248 + getAdress(labelName);
+				memory[*org - 31] = 53248;
 			}
 			set(*org - 31, 1);
 			*org = *org + 1;
@@ -210,21 +234,23 @@ int processLine (uint16_t *org, char *line, int linenum, int pass) {
 		size_t a = sub[2].rm_eo - sub[2].rm_so;
 		memcpy (arrayCh, &(line [sub[2].rm_so]), a);
 		arrayCh[a] = 0;
-		int arrayInt = atoi(arrayCh);
-		printf("arrayInt:%d\n", arrayInt);
-		if (pass == 1)
+		int arrayInt = readNum(arrayCh);
+		if (pass == 1) {
 			*org = *org + arrayInt - 1;
+			if(*org < 31 || *org > 1024)
+				return 4;
+		}
 		if (pass == 2) {
 			while (arrayInt != 0) { 
 				if (get(*org - 31)) {
-					printf ("DEBUG ORG:%d\n", *org);
 					return 3;
 				}
 				else {
 					set (*org - 31, 1);
 					*org = *org + 1;
 					arrayInt--;
-					printf("ORG:%d\n",*org);
+					if(*org < 31 || *org > 1024)
+						return 4;
 				}
 			}
 		if (*org > orgMax)
@@ -233,13 +259,15 @@ int processLine (uint16_t *org, char *line, int linenum, int pass) {
 		return 0;
 	}
 	else if (0 == regexec(&directiveConst, line, 6, sub, 0)) {
-		char constCh[5];
+		char constCh[6];
 		size_t c = sub[2].rm_eo - sub[2].rm_so;
 		memcpy (constCh, &(line [sub[2].rm_so]), c);
 		constCh[c] = 0;
-		int constInt = atoi (constCh);
+		int constInt = readNum(constCh);
 		if (pass == 1) {
 			*org = *org + 1;
+			if(*org < 31 || *org > 1024)
+				return 4;
 			return 0;
 		}
 		if (!get(*org - 31)) { 
@@ -257,18 +285,34 @@ int processLine (uint16_t *org, char *line, int linenum, int pass) {
 		size_t o = sub[2].rm_eo - sub[2].rm_so;
 		memcpy (orgCh, &(line [sub[2].rm_so]), o);
 		orgCh[o] = 0;
-		int orgInt = atoi(orgCh);
+		int orgInt = readNum(orgCh);
 		*org = orgInt;
 		if (*org > orgMax)
 				orgMax = *org;
+		if(*org < 31 || *org > 1024)
+			return 4;
 		return 0;
 	}
 	else return 0;
+}
+
+int readNum (char *array) {
+	char *end;
+	int ans = strtol(array, &end, 0);
+	return ans;
 }
 
 int printAns(FILE *output) {
 	for (int i = 0; i <= orgMax - 32; i++) {
 		fprintf(output, "cell%d:%05lX\n", i + 31, memory[i]);
 	}
+	return 0;
+}
+int deleteLast(char *line) {
+	char *pos;
+	if ((pos=strchr(line, '\n')) != NULL) 
+		*pos = '\0';
+    if ((pos=strchr(line, '\r')) != NULL) 
+		*pos = '\0';
 	return 0;
 }
