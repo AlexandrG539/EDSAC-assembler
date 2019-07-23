@@ -29,6 +29,7 @@ int processLine (uint16_t *org, char *line, int linenum, int pass);
 int printAns(FILE *output);
 int readNum (char *array);
 int deleteLast(char *line);
+int getLenght (char* lgt);
 
 int main (int argc, char **argv) {
 	create (993); // битовый массив отображает, происходила ли запись в ячейку
@@ -63,11 +64,11 @@ int main (int argc, char **argv) {
 		printf ("Could not compile regex label\n");
 		return 7;
 	}
-	if(regcomp(&command, "[[:space:]]*([ASHVNTUCRLEGIOFXYZ])[[:space:]]+([[:alpha:]][[:alnum:]]*)", REG_EXTENDED)) {
+	if(regcomp(&command, "[[:space:]]*([ASHVNTUCRLEGIOFXYZ])[[:space:]]+([[:alpha:]][[:alnum:]]*)[[:space:]]+([SL])", REG_EXTENDED)) {
 		printf ("Could not compile regex command\n");
 		return 7;
 	}
-	if (regcomp(&format,"^[[:space:]]*([[:alpha:]][[:alnum:]]*:)?[[:space:]]*([ASHVNTUCRLEGIOFXYZ][[:space:]]+[[:alpha:]][[:alnum:]]*)?[[:space:]]*(\\/\\/[[:print:]]*)?$", REG_EXTENDED)) {
+	if (regcomp(&format,"^[[:space:]]*([[:alpha:]][[:alnum:]]*:)?[[:space:]]*([ASHVNTUCRLEGIOFXYZ][[:space:]]+[[:alpha:]][[:alnum:]]*[[:space:]]+([SL]))?[[:space:]]*(\\/\\/[[:print:]]*)?$", REG_EXTENDED)) {
 		printf ("Could not compile regex format\n");
 		return 7;
 	}
@@ -158,8 +159,11 @@ int processLine (uint16_t *org, char *line, int linenum, int pass) {
 		}
 		if (pass == 2) {
 			char cmd[2];
+			char lenght[2];
+			memcpy (lenght, &(line [sub[3].rm_so]), 1);
 			memcpy (cmd, &(line [sub[1].rm_so]), 1);
 			cmd[1] = 0;
+			lenght[1] = 0;
 			char labelName[1024];
 			size_t l = sub[2].rm_eo - sub[2].rm_so;
 			memcpy (labelName, &(line [sub[2].rm_so]), l);
@@ -169,58 +173,58 @@ int processLine (uint16_t *org, char *line, int linenum, int pass) {
 			if (get(*org - 31))
 				return 3;
 			if (cmd[0] == 'A') {
-				memory[*org - 31] = 114688 + getAdress(labelName);
+				memory[*org - 31] = 114688 + getAdress(labelName) + getLenght(lenght);
 			}				
 			else if (cmd[0] == 'S') {
-				memory[*org - 31] = 49152 + getAdress(labelName);
+				memory[*org - 31] = 49152 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'H') {
-				memory[*org - 31] = 86016 + getAdress(labelName);
+				memory[*org - 31] = 86016 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'V') {
-				memory[*org - 31] = 126976 + getAdress(labelName);
+				memory[*org - 31] = 126976 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'N') {
-				memory[*org - 31] = 90112 + getAdress(labelName);
+				memory[*org - 31] = 90112 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'T') {
-				memory[*org - 31] = 20480 + getAdress(labelName);
+				memory[*org - 31] = 20480 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'U') {
-				memory[*org - 31] = 28672 + getAdress(labelName);
+				memory[*org - 31] = 28672 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'C') {
-				memory[*org - 31] = 122880 + getAdress(labelName);
+				memory[*org - 31] = 122880 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'R') {
-				memory[*org - 31] = 16384 + getAdress(labelName);
+				memory[*org - 31] = 16384 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'L') {
-				memory[*org - 31] = 102400 + getAdress(labelName);
+				memory[*org - 31] = 102400 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'E') {
-				memory[*org - 31] = 12288 + getAdress(labelName);
+				memory[*org - 31] = 12288 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'G') {
-				memory[*org - 31] = 110592 + getAdress(labelName);
+				memory[*org - 31] = 110592 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'I') {
-				memory[*org - 31] = 32768 + getAdress(labelName);
+				memory[*org - 31] = 32768 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'O') {
-				memory[*org - 31] = 36864 + getAdress(labelName);
+				memory[*org - 31] = 36864 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'F') {
-				memory[*org - 31] = 69632 + getAdress(labelName);
+				memory[*org - 31] = 69632 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'X') {
-				memory[*org - 31] = 106496 + getAdress(labelName);
+				memory[*org - 31] = 106496 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'Y') {
-				memory[*org - 31] = 24576 + getAdress(labelName);
+				memory[*org - 31] = 24576 + getAdress(labelName) + getLenght(lenght);
 			}
 			else if (cmd[0] == 'Z') {
-				memory[*org - 31] = 53248;
+				memory[*org - 31] = 53248 + getLenght(lenght);
 			}
 			set(*org - 31, 1);
 			*org = *org + 1;
@@ -315,4 +319,10 @@ int deleteLast(char *line) {
     if ((pos=strchr(line, '\r')) != NULL) 
 		*pos = '\0';
 	return 0;
+}
+
+int getLenght (char *lgt) {
+	if (lgt[0] == 'S')
+		return 0;
+	else return 1;
 }
